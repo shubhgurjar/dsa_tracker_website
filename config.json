@@ -1,0 +1,12 @@
+{
+  "app_name": "Minimal DSA Tracker",
+  "trip_name": "3 Months DSA Learning Trip",
+  "trip_start_date": "2026-10-31",
+  "trip_duration_days": 90,
+  "trip_target_problems": 150,
+  "trip_manifesto": "Master core Data Structures & Algorithms, solve 150+ high-yield LeetCode problems, and build strong problem-solving intuition through active revision.",
+  "leetcode_username": "",
+  "auth_enabled": true,
+  "auth_pin_hash": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+  "session_secret": "dsa-tracker-secret-key-2026"
+}

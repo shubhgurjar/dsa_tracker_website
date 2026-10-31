@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal DSA Tracker | Unlock</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 30%, #161f30 0%, #0b0f19 80%);
+    }
+    .login-box {
+      max-width: 380px;
+      width: 100%;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+    .login-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin: 0 auto 1.25rem;
+      color: #fff;
+    }
+    .login-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.02em;
+    }
+    .login-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 1.75rem;
+    }
+    .pin-input {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      text-align: center;
+      letter-spacing: 0.35em;
+      padding: 0.65rem 1rem;
+      width: 100%;
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: #ffffff;
+      outline: none;
+      margin-bottom: 1rem;
+    }
+    .pin-input:focus {
+      border-color: var(--accent-primary);
+    }
+    .login-error {
+      color: #ef4444;
+      font-size: 0.8rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <div class="login-icon">⚡</div>
+    <h2 class="login-title">Minimal DSA Tracker</h2>
+    <p class="login-desc">3-Month DSA Sprint. Enter your personal PIN to unlock.</p>
+
+    <form id="form-login">
+      <div id="login-error" class="login-error"></div>
+      <input type="password" id="pin-input" class="pin-input" placeholder="••••" maxlength="12" autocomplete="off" required>
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.65rem; font-size: 0.95rem;">
+        Unlock Dashboard &rarr;
+      </button>
+    </form>
+
+    <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-dim);">
+      Default PIN: <code>1234</code> (can be changed anytime in Profile Settings)
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/login.js"></script>
+</body>
+</html>

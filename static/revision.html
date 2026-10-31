@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal DSA Tracker | Revision Center</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    .urgency-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .urgency-summary-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .urgency-summary-card:hover {
+      transform: translateY(-2px);
+    }
+    .urgency-summary-card.active {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <div class="brand-icon">⚡</div>
+        <span>DSA TRACKER</span>
+        <span class="trip-day-badge" id="nav-trip-day">Trip Tracker</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/dashboard"><span>📊</span> Overview</a></li>
+        <li><a href="/concepts"><span>📚</span> Learning (DS & Algo)</a></li>
+        <li><a href="/problems"><span>💻</span> Problems</a></li>
+        <li><a href="/revision" class="active"><span>🔁</span> Revision</a></li>
+        <li><a href="/profile"><span>👤</span> Profile & Settings</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="btn btn-primary btn-sm" id="btn-nav-add-problem">+ Log Problem</button>
+        <button class="btn btn-secondary btn-icon" id="btn-logout" title="Lock / Logout">🔒</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h1 class="page-title">🔁 Spaced Repetition & Revision Center</h1>
+      <p class="page-subtitle">Know at a glance how many days have elapsed since you last revisited any concept or problem. Beat the forgetting curve.</p>
+    </div>
+
+    <!-- Urgency Tier Filter Cards -->
+    <div class="urgency-summary-grid">
+      <div class="urgency-summary-card" data-urgency="overdue" onclick="setUrgencyFilter('overdue')">
+        <div class="stat-label">🚨 Overdue (>14d)</div>
+        <div class="stat-value" id="count-overdue" style="color: #ef4444;">0</div>
+        <div class="stat-subtext">Needs immediate recall</div>
+      </div>
+
+      <div class="urgency-summary-card" data-urgency="due" onclick="setUrgencyFilter('due')">
+        <div class="stat-label">⚠️ Revision Due (8-14d)</div>
+        <div class="stat-value" id="count-due" style="color: #f59e0b;">0</div>
+        <div class="stat-subtext">Prime for memory reinforcement</div>
+      </div>
+
+      <div class="urgency-summary-card" data-urgency="due_soon" onclick="setUrgencyFilter('due_soon')">
+        <div class="stat-label">⚡ Due Soon (4-7d)</div>
+        <div class="stat-value" id="count-due-soon" style="color: #38bdf8;">0</div>
+        <div class="stat-subtext">Consolidating in memory</div>
+      </div>
+
+      <div class="urgency-summary-card" data-urgency="fresh" onclick="setUrgencyFilter('fresh')">
+        <div class="stat-label">🌱 Fresh (≤3d)</div>
+        <div class="stat-value" id="count-fresh" style="color: #10b981;">0</div>
+        <div class="stat-subtext">Recently solved or revised</div>
+      </div>
+    </div>
+
+    <!-- Toolbar Filters -->
+    <div class="filter-bar">
+      <input type="text" id="rev-search" class="search-input" placeholder="Search problems or concepts in queue...">
+      
+      <select id="rev-type-filter" class="select-control">
+        <option value="all">All Items (Problems & Concepts)</option>
+        <option value="problem">Problems Only</option>
+        <option value="concept">Concepts Only</option>
+      </select>
+
+      <button class="btn btn-secondary btn-sm" onclick="setUrgencyFilter('all')">
+        Reset Tier Filter (Show All)
+      </button>
+    </div>
+
+    <!-- Revision Queue Table Card -->
+    <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 2.5rem;">
+      <div class="data-table-wrapper" style="border: none;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Item & Category</th>
+              <th>Last Revised Date</th>
+              <th>Days Since Revised</th>
+              <th style="text-align:center;">Revisions</th>
+              <th style="text-align:right;">1-Click Action</th>
+            </tr>
+          </thead>
+          <tbody id="revision-queue-tbody">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem;">Loading revision queue...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recent Revision Activity History -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>📜</span> Recent Revision Activity History
+        </div>
+      </div>
+      <div id="revision-logs-container">
+        <div style="color: var(--text-dim); font-size: 0.85rem;">Loading activity history...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Global Quick Add Problem Modal -->
+  <div class="modal-overlay" id="modal-add-problem">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">⚡ Log LeetCode Problem</h3>
+        <button class="btn btn-secondary btn-icon" onclick="App.closeModal('modal-add-problem')">&times;</button>
+      </div>
+      <form id="form-add-problem" onsubmit="handleQuickAddProblem(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Problem Title *</label>
+            <input type="text" class="form-input" id="new-prob-title" placeholder="e.g. Trapping Rain Water" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">LeetCode #</label>
+            <input type="number" class="form-input" id="new-prob-number" placeholder="e.g. 42">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Difficulty *</label>
+            <select class="form-select" id="new-prob-difficulty">
+              <option value="Easy">Easy</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data Structure</label>
+            <select class="form-select" id="new-prob-ds">
+              <option value="">Select Data Structure...</option>
+              <option value="Arrays & Dynamic Arrays">Arrays & Dynamic Arrays</option>
+              <option value="Strings">Strings</option>
+              <option value="Linked Lists (Singly & Doubly)">Linked Lists (Singly & Doubly)</option>
+              <option value="Stacks & Monotonic Stacks">Stacks & Monotonic Stacks</option>
+              <option value="Queues & Monotonic Deques">Queues & Monotonic Deques</option>
+              <option value="Hash Tables & Hash Sets">Hash Tables & Hash Sets</option>
+              <option value="Binary Trees">Binary Trees</option>
+              <option value="Binary Search Trees (BST)">Binary Search Trees (BST)</option>
+              <option value="Heaps & Priority Queues">Heaps & Priority Queues</option>
+              <option value="Graphs (Representation & Properties)">Graphs</option>
+              <option value="Trie (Prefix Tree)">Trie (Prefix Tree)</option>
+              <option value="Disjoint Set Union (Union-Find)">Disjoint Set Union</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Algorithm / Pattern</label>
+            <select class="form-select" id="new-prob-algo">
+              <option value="">Select Algorithm...</option>
+              <option value="Two Pointers Technique">Two Pointers Technique</option>
+              <option value="Sliding Window (Fixed & Variable)">Sliding Window</option>
+              <option value="Prefix Sums & Frequency Arrays">Prefix Sums</option>
+              <option value="Binary Search">Binary Search</option>
+              <option value="Sorting Algorithms (Merge, Quick, Count)">Sorting</option>
+              <option value="Breadth-First Search (BFS)">BFS</option>
+              <option value="Depth-First Search (DFS) & Backtracking">DFS & Backtracking</option>
+              <option value="Dynamic Programming (1D & 2D)">Dynamic Programming</option>
+              <option value="Greedy Algorithms & Intervals">Greedy & Intervals</option>
+              <option value="Dijkstra & Shortest Path">Dijkstra</option>
+              <option value="Topological Sort (Kahn's & DFS)">Topological Sort</option>
+              <option value="Bit Manipulation">Bit Manipulation</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pattern Subtag</label>
+            <input type="text" class="form-input" id="new-prob-pattern" placeholder="e.g. Left/Right Max Arrays">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Time Complexity</label>
+            <input type="text" class="form-input" id="new-prob-time" placeholder="e.g. O(N)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Space Complexity</label>
+            <input type="text" class="form-input" id="new-prob-space" placeholder="e.g. O(1)">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">LeetCode Problem URL</label>
+          <input type="url" class="form-input" id="new-prob-url" placeholder="https://leetcode.com/problems/...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Approach Notes / Key Insights</label>
+          <textarea class="form-textarea" id="new-prob-notes" placeholder="Key intuition, tricky edge cases to remember during revision..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-add-problem')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Problem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/revision.js"></script>
+  <script>
+    async function handleQuickAddProblem(e) {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById("new-prob-title").value,
+        leetcode_number: document.getElementById("new-prob-number").value ? parseInt(document.getElementById("new-prob-number").value) : null,
+        difficulty: document.getElementById("new-prob-difficulty").value,
+        data_structure: document.getElementById("new-prob-ds").value,
+        algorithm: document.getElementById("new-prob-algo").value,
+        pattern: document.getElementById("new-prob-pattern").value,
+        time_complexity: document.getElementById("new-prob-time").value,
+        space_complexity: document.getElementById("new-prob-space").value,
+        problem_url: document.getElementById("new-prob-url").value,
+        approach_notes: document.getElementById("new-prob-notes").value
+      };
+
+      try {
+        await App.api("/api/problems", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        App.showToast(`Problem "${payload.title}" saved!`);
+        App.closeModal("modal-add-problem");
+        document.getElementById("form-add-problem").reset();
+        await loadRevisionQueue();
+      } catch (err) {
+        App.showToast(`Failed to save: ${err.message}`, "error");
+      }
+    }
+  </script>
+</body>
+</html>

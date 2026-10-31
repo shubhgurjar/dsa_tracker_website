@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal DSA Tracker | Overview</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <div class="brand-icon">⚡</div>
+        <span>DSA TRACKER</span>
+        <span class="trip-day-badge" id="nav-trip-day">Trip Tracker</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/dashboard" class="active"><span>📊</span> Overview</a></li>
+        <li><a href="/concepts"><span>📚</span> Learning (DS & Algo)</a></li>
+        <li><a href="/problems"><span>💻</span> Problems</a></li>
+        <li><a href="/revision"><span>🔁</span> Revision</a></li>
+        <li><a href="/profile"><span>👤</span> Profile & Settings</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="btn btn-primary btn-sm" id="btn-nav-add-problem">+ Log Problem</button>
+        <button class="btn btn-secondary btn-icon" id="btn-logout" title="Lock / Logout">🔒</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- 3-Month Trip Hero Banner -->
+    <div id="trip-banner-container"></div>
+
+    <!-- Key Metrics Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">LeetCode Solved <span>🎯</span></div>
+        <div class="stat-value" id="stat-problems-val">0</div>
+        <div class="stat-subtext" id="stat-problems-sub">Loading...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Data Structures <span>🧱</span></div>
+        <div class="stat-value" id="stat-ds-val">0/0</div>
+        <div class="stat-subtext" id="stat-ds-sub">Loading...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Algorithms <span>⚡</span></div>
+        <div class="stat-value" id="stat-algo-val">0/0</div>
+        <div class="stat-subtext" id="stat-algo-sub">Loading...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Revisions Needed <span>⏳</span></div>
+        <div class="stat-value" id="stat-rev-val">0</div>
+        <div class="stat-subtext" id="stat-rev-sub">Loading...</div>
+      </div>
+    </div>
+
+    <!-- LeetCode Overview Card -->
+    <div class="card" id="leetcode-overview-card" style="margin-bottom: 2rem;"></div>
+
+    <!-- Quick Navigation to Multi-Page Sections -->
+    <div style="margin-bottom: 1rem;">
+      <h3 style="font-size: 1.1rem; color: #fff; font-weight: 700;">Explore Sections</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Jump directly into in-depth tracking and focused practice.</p>
+    </div>
+
+    <div class="quick-nav-grid">
+      <a href="/concepts" class="nav-card">
+        <div class="nav-card-icon">📚</div>
+        <div class="nav-card-title">Learning Hub (DS & Algorithms)</div>
+        <div class="nav-card-desc">Track status and confidence across 24+ core Data Structures (Arrays, Trees, Graphs) and Algorithms (DP, Sliding Window, Two Pointers).</div>
+        <div class="nav-card-footer">Open Learning Hub &rarr;</div>
+      </a>
+
+      <a href="/problems" class="nav-card">
+        <div class="nav-card-icon">💻</div>
+        <div class="nav-card-title">Problems Vault</div>
+        <div class="nav-card-desc">Search, filter by topic or difficulty, inspect code approaches, complexity O(N), and direct LeetCode links.</div>
+        <div class="nav-card-footer">View All Problems &rarr;</div>
+      </a>
+
+      <a href="/revision" class="nav-card">
+        <div class="nav-card-icon">🔁</div>
+        <div class="nav-card-title">Revision Center</div>
+        <div class="nav-card-desc">Spaced repetition queue. See at a glance how many days it has been since you revised any problem or concept, and mark revised with 1 click.</div>
+        <div class="nav-card-footer">Open Revision Center &rarr;</div>
+      </a>
+
+      <a href="/profile" class="nav-card">
+        <div class="nav-card-icon">⚙️</div>
+        <div class="nav-card-title">Profile & Trip Settings</div>
+        <div class="nav-card-desc">Configure your 3-month trip dates, LeetCode profile sync, personal manifesto, and JSON data export/backup.</div>
+        <div class="nav-card-footer">Manage Settings &rarr;</div>
+      </a>
+    </div>
+
+    <!-- Two Key Tables: Urgent Revisions & Recent Solved Problems -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem;">
+      
+      <!-- Urgent Revisions Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>⏳</span> Urgent Revisions Needed
+          </div>
+          <a href="/revision" class="btn btn-sm btn-secondary">View All Revisions &rarr;</a>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Last Revised</th>
+                <th style="text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="urgent-revisions-tbody">
+              <tr><td colspan="4" style="text-align:center; padding:1.5rem;">Loading urgent items...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Solved Problems Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>✨</span> Recent Solved Problems
+          </div>
+          <a href="/problems" class="btn btn-sm btn-secondary">View Vault &rarr;</a>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Problem</th>
+                <th>Difficulty</th>
+                <th>Category</th>
+                <th>Solved Date</th>
+              </tr>
+            </thead>
+            <tbody id="recent-problems-tbody">
+              <tr><td colspan="4" style="text-align:center; padding:1.5rem;">Loading problems...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Global Quick Add Problem Modal -->
+  <div class="modal-overlay" id="modal-add-problem">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">⚡ Log LeetCode Problem</h3>
+        <button class="btn btn-secondary btn-icon" onclick="App.closeModal('modal-add-problem')">&times;</button>
+      </div>
+      <form id="form-add-problem" onsubmit="handleQuickAddProblem(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Problem Title *</label>
+            <input type="text" class="form-input" id="new-prob-title" placeholder="e.g. Trapping Rain Water" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">LeetCode #</label>
+            <input type="number" class="form-input" id="new-prob-number" placeholder="e.g. 42">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Difficulty *</label>
+            <select class="form-select" id="new-prob-difficulty">
+              <option value="Easy">Easy</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data Structure</label>
+            <select class="form-select" id="new-prob-ds">
+              <option value="">Select Data Structure...</option>
+              <option value="Arrays & Dynamic Arrays">Arrays & Dynamic Arrays</option>
+              <option value="Strings">Strings</option>
+              <option value="Linked Lists (Singly & Doubly)">Linked Lists (Singly & Doubly)</option>
+              <option value="Stacks & Monotonic Stacks">Stacks & Monotonic Stacks</option>
+              <option value="Queues & Monotonic Deques">Queues & Monotonic Deques</option>
+              <option value="Hash Tables & Hash Sets">Hash Tables & Hash Sets</option>
+              <option value="Binary Trees">Binary Trees</option>
+              <option value="Binary Search Trees (BST)">Binary Search Trees (BST)</option>
+              <option value="Heaps & Priority Queues">Heaps & Priority Queues</option>
+              <option value="Graphs (Representation & Properties)">Graphs</option>
+              <option value="Trie (Prefix Tree)">Trie (Prefix Tree)</option>
+              <option value="Disjoint Set Union (Union-Find)">Disjoint Set Union</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Algorithm / Pattern</label>
+            <select class="form-select" id="new-prob-algo">
+              <option value="">Select Algorithm...</option>
+              <option value="Two Pointers Technique">Two Pointers Technique</option>
+              <option value="Sliding Window (Fixed & Variable)">Sliding Window</option>
+              <option value="Prefix Sums & Frequency Arrays">Prefix Sums</option>
+              <option value="Binary Search">Binary Search</option>
+              <option value="Sorting Algorithms (Merge, Quick, Count)">Sorting</option>
+              <option value="Breadth-First Search (BFS)">BFS</option>
+              <option value="Depth-First Search (DFS) & Backtracking">DFS & Backtracking</option>
+              <option value="Dynamic Programming (1D & 2D)">Dynamic Programming</option>
+              <option value="Greedy Algorithms & Intervals">Greedy & Intervals</option>
+              <option value="Dijkstra & Shortest Path">Dijkstra</option>
+              <option value="Topological Sort (Kahn's & DFS)">Topological Sort</option>
+              <option value="Bit Manipulation">Bit Manipulation</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pattern Subtag</label>
+            <input type="text" class="form-input" id="new-prob-pattern" placeholder="e.g. Left/Right Max Arrays">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Time Complexity</label>
+            <input type="text" class="form-input" id="new-prob-time" placeholder="e.g. O(N)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Space Complexity</label>
+            <input type="text" class="form-input" id="new-prob-space" placeholder="e.g. O(1)">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">LeetCode Problem URL</label>
+          <input type="url" class="form-input" id="new-prob-url" placeholder="https://leetcode.com/problems/...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Approach Notes / Key Insights</label>
+          <textarea class="form-textarea" id="new-prob-notes" placeholder="Key intuition, tricky edge cases to remember during revision..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-add-problem')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Problem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+  <script>
+    async function handleQuickAddProblem(e) {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById("new-prob-title").value,
+        leetcode_number: document.getElementById("new-prob-number").value ? parseInt(document.getElementById("new-prob-number").value) : null,
+        difficulty: document.getElementById("new-prob-difficulty").value,
+        data_structure: document.getElementById("new-prob-ds").value,
+        algorithm: document.getElementById("new-prob-algo").value,
+        pattern: document.getElementById("new-prob-pattern").value,
+        time_complexity: document.getElementById("new-prob-time").value,
+        space_complexity: document.getElementById("new-prob-space").value,
+        problem_url: document.getElementById("new-prob-url").value,
+        approach_notes: document.getElementById("new-prob-notes").value
+      };
+
+      try {
+        await App.api("/api/problems", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        App.showToast(`Problem "${payload.title}" saved!`);
+        App.closeModal("modal-add-problem");
+        document.getElementById("form-add-problem").reset();
+        if (typeof loadDashboard === "function") {
+          await loadDashboard();
+        }
+      } catch (err) {
+        App.showToast(`Failed to save: ${err.message}`, "error");
+      }
+    }
+  </script>
+</body>
+</html>

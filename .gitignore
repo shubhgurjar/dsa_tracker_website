@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# SQLite WAL
+*.db-shm
+*.db-wal
+
+# OS
+.DS_Store
