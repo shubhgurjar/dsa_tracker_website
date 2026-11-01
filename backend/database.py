@@ -89,6 +89,22 @@ def init_db():
     );
     """)
 
+    # Flashcards table for dedicated topic pages
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS flashcards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        concept_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        tag TEXT DEFAULT 'Pattern',
+        content TEXT NOT NULL,
+        last_revised_date TEXT NOT NULL,
+        revision_count INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(concept_id) REFERENCES concepts(id) ON DELETE CASCADE
+    );
+    """)
+
     conn.commit()
 
     # Seed concepts if empty
@@ -99,14 +115,14 @@ def init_db():
         for ds in DATA_STRUCTURES:
             cursor.execute("""
                 INSERT INTO concepts (type, name, category, description, cheat_sheet, status, confidence, last_revised_date, revision_count)
-                VALUES ('data_structure', ?, ?, ?, ?, 'Not Started', 1, ?, 0)
-            """, (ds["name"], ds["category"], ds["description"], ds["cheat_sheet"], datetime.now().strftime("%Y-%m-%d")))
+                VALUES ('data_structure', ?, ?, '', '', 'Not Started', 1, ?, 0)
+            """, (ds["name"], ds["category"], datetime.now().strftime("%Y-%m-%d")))
 
         for algo in ALGORITHMS:
             cursor.execute("""
                 INSERT INTO concepts (type, name, category, description, cheat_sheet, status, confidence, last_revised_date, revision_count)
-                VALUES ('algorithm', ?, ?, ?, ?, 'Not Started', 1, ?, 0)
-            """, (algo["name"], algo["category"], algo["description"], algo["cheat_sheet"], datetime.now().strftime("%Y-%m-%d")))
+                VALUES ('algorithm', ?, ?, '', '', 'Not Started', 1, ?, 0)
+            """, (algo["name"], algo["category"], datetime.now().strftime("%Y-%m-%d")))
         conn.commit()
 
     # Seed sample problems if empty
@@ -129,6 +145,44 @@ def init_db():
                 p.get("time_complexity", ""), p.get("space_complexity", ""),
                 p.get("approach_notes", ""), p.get("code_snippet", ""), p.get("starred", 0)
             ))
+        conn.commit()
+
+    # Seed sample flashcards if empty
+    cursor.execute("SELECT COUNT(*) FROM flashcards")
+    flashcard_count = cursor.fetchone()[0]
+    if flashcard_count == 0:
+        today_str = datetime.now().strftime("%Y-%m-%d")
+
+        # 1. Seed overview flashcard for every concept from DATA_STRUCTURES and ALGORITHMS
+        for item in DATA_STRUCTURES + ALGORITHMS:
+            cursor.execute("SELECT id FROM concepts WHERE name = ?", (item["name"],))
+            c_row = cursor.fetchone()
+            if c_row:
+                c_id = c_row[0]
+                desc = item.get("description", "").strip()
+                summary = item.get("cheat_sheet", "").strip()
+                parts = []
+                if desc:
+                    parts.append(f"### 💡 Overview & Core Intuition\n{desc}")
+                if summary:
+                    parts.append(f"### 📌 Quick Summary & Key Patterns\n{summary}")
+                content = "\n\n".join(parts) if parts else "Notes and summary can be added here."
+                cursor.execute("""
+                    INSERT INTO flashcards (concept_id, title, tag, content, last_revised_date, revision_count)
+                    VALUES (?, ?, 'Cheat Sheet', ?, ?, 0)
+                """, (c_id, f"{item['name']} - Overview & Quick Summary", content, today_str))
+
+        # 2. Seed additional detailed pattern cards
+        from backend.seed_data import SAMPLE_FLASHCARDS
+        for card in SAMPLE_FLASHCARDS:
+            cursor.execute("SELECT id FROM concepts WHERE name = ?", (card["concept_name"],))
+            c_row = cursor.fetchone()
+            if c_row:
+                c_id = c_row[0]
+                cursor.execute("""
+                    INSERT INTO flashcards (concept_id, title, tag, content, last_revised_date, revision_count)
+                    VALUES (?, ?, ?, ?, ?, 0)
+                """, (c_id, card["title"], card.get("tag", "Pattern"), card["content"], today_str))
         conn.commit()
 
     conn.close()

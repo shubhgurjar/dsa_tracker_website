@@ -224,3 +224,141 @@ SAMPLE_PROBLEMS = [
         "starred": 1
     }
 ]
+
+SAMPLE_FLASHCARDS = [
+    {
+        "concept_name": "Strings",
+        "title": "Palindrome Verification & Inward Two Pointers",
+        "tag": "Pattern",
+        "content": """### 💡 Theory & Core Intuition
+A palindrome reads identically forwards and backwards. The optimal verification technique uses **Two Pointers** moving inward from the extremities towards the center.
+
+### 📋 Algorithmic Steps
+1. Place `left = 0` and `right = len(s) - 1`.
+2. Skip non-alphanumeric characters using `s[left].isalnum()` if problem requires ignoring spaces/symbols.
+3. Compare `s[left].lower()` with `s[right].lower()`. If they mismatch, return `False`.
+4. Increment `left += 1`, decrement `right -= 1`.
+5. If pointers cross without mismatch, return `True`.
+
+### ⚡ Complexity Analysis
+- **Time Complexity:** $O(N)$ — each character inspected at most twice.
+- **Space Complexity:** $O(1)$ auxiliary memory since we check in-place without copying reversed strings.
+
+### 🐍 Python Clean Implementation
+```python
+def isPalindrome(s: str) -> bool:
+    left, right = 0, len(s) - 1
+    while left < right:
+        while left < right and not s[left].isalnum():
+            left += 1
+        while left < right and not s[right].isalnum():
+            right -= 1
+        if s[left].lower() != s[right].lower():
+            return False
+        left += 1
+        right -= 1
+    return True
+```
+
+### ⚠️ Pitfalls & Edge Cases
+- Empty string or single character string is valid palindrome.
+- Character casing (`'A'` vs `'a'`) requires normalization with `.lower()`.
+- Palindrome substring expansion: For finding longest palindromic substring, expand **outward** from each index (odd length: `i`, even length: `i, i+1`)."""
+    },
+    {
+        "concept_name": "Strings",
+        "title": "Character Frequency Arrays vs HashMaps",
+        "tag": "Cheat Sheet",
+        "content": """### 💡 Technique Overview
+When dealing with strings restricted to ASCII or lowercase English letters (`'a'` through `'z'`), an array of fixed size 26 or 128 is significantly faster and more cache-friendly than a general hash map (`dict`).
+
+### 📌 Core Formula
+- Index calculation for lowercase letters: `ord(char) - ord('a')`
+- Index calculation for uppercase letters: `ord(char) - ord('A')`
+- Full ASCII set: fixed array of size `128` or `256`.
+
+### 🐍 Python Anagram Verification Template
+```python
+def isAnagram(s: str, t: str) -> bool:
+    if len(s) != len(t):
+        return False
+    counts = [0] * 26
+    for c1, c2 in zip(s, t):
+        counts[ord(c1) - ord('a')] += 1
+        counts[ord(c2) - ord('a')] -= 1
+    return all(count == 0 for count in counts)
+```
+
+### ⚡ Why Use Array Over Hash Map?
+- **Zero Hash Collisions:** Direct array indexing is guaranteed $O(1)$ worst-case.
+- **Cache Locality:** Contiguous memory block of 26 integers fits inside a single CPU cache line.
+- **Space Complexity:** $O(1)$ strictly bounded memory."""
+    },
+    {
+        "concept_name": "Strings",
+        "title": "Sliding Window Substring Template",
+        "tag": "Template",
+        "content": """### 💡 When to Apply
+Apply when asked for:
+- Longest substring satisfying a condition (e.g. without repeating characters).
+- Smallest substring containing all characters of pattern (Minimum Window Substring).
+
+### 🛠️ Universal Variable Window Template
+```python
+def slidingWindow(s: str) -> int:
+    state = {}
+    left = 0
+    ans = 0
+    
+    for right in range(len(s)):
+        # 1. Add current character into window
+        char = s[right]
+        state[char] = state.get(char, 0) + 1
+        
+        # 2. While window constraint is violated, shrink from left
+        while window_is_invalid(state):
+            left_char = s[left]
+            state[left_char] -= 1
+            if state[left_char] == 0:
+                del state[left_char]
+            left += 1
+            
+        # 3. Update answer with valid window
+        ans = max(ans, right - left + 1)
+        
+    return ans
+```
+
+### 🧠 Key Takeaway
+The right pointer **expands** the window to include new information. The left pointer **contracts** the window to restore invariant. Both pointers move at most $N$ times $\\implies O(N)$ runtime!"""
+    },
+    {
+        "concept_name": "Strings",
+        "title": "String Immutability & Efficient Construction",
+        "tag": "Theory",
+        "content": """### ⚠️ The $O(N^2)$ String Concatenation Trap
+In languages like Python and Java, strings are **immutable**.
+When you write:
+```python
+# ANTI-PATTERN: DO NOT DO THIS IN A LOOP!
+s = ""
+for char in large_stream:
+    s += char  # Creates a brand new copy of string each time!
+```
+Each concatenation copies all previous characters:
+$$1 + 2 + 3 + \\dots + N = \\frac{N(N+1)}{2} = O(N^2)$$
+
+### 🚀 The Optimal Pattern: List Accumulation
+Instead of repeated string addition, accumulate elements into a dynamic array (Python `list`), then combine with `str.join()`:
+```python
+# OPTIMAL PATTERN: O(N) Total Time
+buffer = []
+for char in stream:
+    buffer.append(char)
+result = "".join(buffer)  # Single O(N) pass memory allocation
+```
+
+### 💡 StringBuilder Equivalent in Python
+Python's `io.StringIO` or appending to a list and calling `''.join()` acts as the equivalent of Java's `StringBuilder`."""
+    }
+]

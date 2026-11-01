@@ -87,6 +87,11 @@
         <h3 class="modal-title" id="edit-concept-title">Edit Topic</h3>
         <button class="btn btn-secondary btn-icon" onclick="App.closeModal('modal-edit-concept')">&times;</button>
       </div>
+      <div style="margin-bottom: 1.25rem;">
+        <button type="button" id="edit-concept-goto-topic" class="btn btn-primary" onclick="goToDedicatedTopicFromModal()" style="width: 100%; justify-content: center; background: #6366f1; padding: 0.75rem; font-weight: 700; font-size: 0.95rem; cursor: pointer;">
+          🗂️ Open Dedicated Notes & Flashcards Page &rarr;
+        </button>
+      </div>
       <form id="form-edit-concept" onsubmit="handleSaveConceptEdits(event)">
         
         <div class="form-row">
@@ -282,8 +287,8 @@
 
   <div id="toast-container"></div>
 
-  <script src="/static/js/app.js"></script>
-  <script src="/static/js/concepts.js"></script>
+  <script src="/static/js/app.js?v=2.3"></script>
+  <script src="/static/js/concepts.js?v=2.3"></script>
   <script>
     async function handleQuickAddProblem(e) {
       e.preventDefault();

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Topic Flashcards | Minimal DSA Tracker</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    .topic-hero-card {
+      background: linear-gradient(145deg, #161f30 0%, #111827 100%);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .flashcards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .fullview-content-box {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+      font-family: var(--font-sans);
+      max-height: 65vh;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <div class="brand-icon">⚡</div>
+        <span>DSA TRACKER</span>
+        <span class="trip-day-badge" id="nav-trip-day">Trip Tracker</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/dashboard"><span>📊</span> Overview</a></li>
+        <li><a href="/concepts" class="active"><span>📚</span> Learning (DS & Algo)</a></li>
+        <li><a href="/problems"><span>💻</span> Problems</a></li>
+        <li><a href="/revision"><span>🔁</span> Revision</a></li>
+        <li><a href="/profile"><span>👤</span> Profile & Settings</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="btn btn-primary btn-sm" id="btn-nav-add-problem">+ Log Problem</button>
+        <button class="btn btn-secondary btn-icon" id="btn-logout" title="Lock / Logout">🔒</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 1.25rem;">
+      <a href="/concepts" style="color: #818cf8; font-size: 0.88rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+        &larr; Back to All Topics (Learning Hub)
+      </a>
+    </div>
+
+    <!-- Topic Hero Banner -->
+    <div class="topic-hero-card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <div id="topic-category" style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+            Loading Topic...
+          </div>
+          <h1 id="topic-title" style="font-size: 2rem; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 0.4rem;">
+            Loading...
+          </h1>
+          <p id="topic-desc" style="font-size: 0.92rem; color: var(--text-muted); max-width: 720px; line-height: 1.5;"></p>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+          <select id="topic-status-select" class="select-control" onchange="updateCurrentTopicStatus(this.value)">
+            <option value="Not Started">⚪ Not Started</option>
+            <option value="In Progress">🔵 In Progress</option>
+            <option value="Mastered">🟢 Mastered</option>
+          </select>
+          <button class="btn btn-primary" onclick="openCreateFlashcardModal()">
+            + Add Flashcard
+          </button>
+          <button class="btn btn-revise" onclick="markOverallTopicRevised()">
+            ✓ Mark Topic Revised
+          </button>
+        </div>
+      </div>
+
+      <!-- Topic Meta Badges -->
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 1rem; font-size: 0.85rem;">
+        <div>
+          <span style="color: var(--text-dim); margin-right: 4px;">Confidence:</span>
+          <span id="topic-confidence-stars" class="confidence-stars" onclick="promptTopicConfidence()" style="cursor: pointer;">
+            ★★☆☆☆
+          </span>
+        </div>
+        <span class="badge" id="topic-fc-count" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);">
+          0 Flashcards
+        </span>
+        <span class="badge" id="topic-prob-count" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+          0 Problems Solved
+        </span>
+        <div style="display: flex; align-items: center; gap: 0.35rem; margin-left: auto;">
+          <span style="color: var(--text-dim); font-size: 0.8rem;">Topic Revision:</span>
+          <span id="topic-last-revised"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flashcards Toolbar -->
+    <div class="card-header" style="margin-bottom: 1rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">
+          🗂️ Topic Flashcards & Deep Notes
+        </h3>
+        <span id="fc-filtered-count" class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+          Loading...
+        </span>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="openCreateFlashcardModal()">
+        + Add New Card
+      </button>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="fc-search" class="search-input" placeholder="Search flashcard titles, patterns, or formulas in this topic...">
+
+      <select id="fc-tag-filter" class="select-control">
+        <option value="all">All Card Tags</option>
+        <option value="Pattern">Pattern</option>
+        <option value="Template">Template</option>
+        <option value="Cheat Sheet">Cheat Sheet</option>
+        <option value="Edge Case">Edge Case</option>
+        <option value="Theory">Theory</option>
+        <option value="Complexity">Complexity</option>
+      </select>
+
+      <select id="fc-urgency-filter" class="select-control">
+        <option value="all">All Revisions</option>
+        <option value="overdue">🚨 Overdue (>14d)</option>
+        <option value="due">⚠️ Due (8-14d)</option>
+        <option value="due_soon">⚡ Due Soon (4-7d)</option>
+        <option value="fresh">🌱 Fresh (≤3d)</option>
+      </select>
+    </div>
+
+    <!-- Flashcards Grid -->
+    <div class="flashcards-grid" id="flashcards-grid">
+      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-dim);">
+        Loading flashcards...
+      </div>
+    </div>
+
+    <!-- Linked LeetCode Problems Card -->
+    <div class="card" style="margin-top: 2.5rem;">
+      <div class="card-header">
+        <div class="card-title">
+          <span>💻</span> Solved Problems in this Topic
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="App.openModal('modal-add-problem')">+ Log Solved Problem</button>
+      </div>
+      <div id="topic-problems-container">
+        <div style="color: var(--text-dim); font-size: 0.85rem;">Loading linked problems...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Add / Edit Flashcard Modal (Full Page-Worth Text Support) -->
+  <div class="modal-overlay" id="modal-flashcard-form">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-fc-title-header">+ New Flashcard</h3>
+        <button class="btn btn-secondary btn-icon" onclick="App.closeModal('modal-flashcard-form')">&times;</button>
+      </div>
+      <form id="form-add-flashcard">
+        <div class="form-row">
+          <div class="form-group" style="flex: 2;">
+            <label class="form-label">Flashcard Title / Concept *</label>
+            <input type="text" class="form-input" id="fc-form-title" placeholder="e.g. Palindrome Verification & Inward Two Pointers" required>
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label class="form-label">Category Tag</label>
+            <select class="form-select" id="fc-form-tag">
+              <option value="Pattern" selected>Pattern</option>
+              <option value="Template">Template</option>
+              <option value="Cheat Sheet">Cheat Sheet</option>
+              <option value="Edge Case">Edge Case</option>
+              <option value="Theory">Theory</option>
+              <option value="Complexity">Complexity</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Flashcard Content & Notes (Write as much as you need — full page of code, notes, complexity) *
+          </label>
+          <textarea class="form-textarea" id="fc-form-content" style="min-height: 280px; font-family: var(--font-sans); font-size: 0.88rem; line-height: 1.6;" placeholder="Write your full page of notes here:
+• Core intuition & theory
+• Code implementation template
+• Edge cases & gotchas
+• Time Complexity O(...) and Space Complexity O(...)" required></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-flashcard-form')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Flashcard</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Full-View Reading Mode Modal -->
+  <div class="modal-overlay" id="modal-fullview-flashcard">
+    <div class="modal-content" style="max-width: 850px;">
+      <div class="modal-header">
+        <div>
+          <span class="badge" id="fullview-tag" style="background: rgba(99,102,241,0.15); color: #818cf8; margin-bottom: 0.35rem;">
+            Pattern
+          </span>
+          <h2 id="fullview-title" style="font-size: 1.45rem; font-weight: 800; color: #fff; line-height: 1.25;"></h2>
+        </div>
+        <button class="btn btn-secondary btn-icon" onclick="App.closeModal('modal-fullview-flashcard')">&times;</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.82rem; color: var(--text-dim); border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+        <span id="fullview-last-rev">Last revised: Today</span>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span id="fullview-urgency"></span>
+          <button class="btn btn-sm btn-revise" onclick="handleFullViewRevise()">✓ Mark Revised Today</button>
+        </div>
+      </div>
+
+      <div class="fullview-content-box" id="fullview-content"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-fullview-flashcard')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Quick Add Problem Modal -->
+  <div class="modal-overlay" id="modal-add-problem">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">⚡ Log LeetCode Problem</h3>
+        <button class="btn btn-secondary btn-icon" onclick="App.closeModal('modal-add-problem')">&times;</button>
+      </div>
+      <form id="form-add-problem" onsubmit="handleQuickAddProblem(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Problem Title *</label>
+            <input type="text" class="form-input" id="new-prob-title" placeholder="e.g. Trapping Rain Water" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">LeetCode #</label>
+            <input type="number" class="form-input" id="new-prob-number" placeholder="e.g. 42">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Difficulty *</label>
+            <select class="form-select" id="new-prob-difficulty">
+              <option value="Easy">Easy</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data Structure</label>
+            <select class="form-select" id="new-prob-ds">
+              <option value="">Select Data Structure...</option>
+              <option value="Arrays & Dynamic Arrays">Arrays & Dynamic Arrays</option>
+              <option value="Strings">Strings</option>
+              <option value="Linked Lists (Singly & Doubly)">Linked Lists (Singly & Doubly)</option>
+              <option value="Stacks & Monotonic Stacks">Stacks & Monotonic Stacks</option>
+              <option value="Queues & Monotonic Deques">Queues & Monotonic Deques</option>
+              <option value="Hash Tables & Hash Sets">Hash Tables & Hash Sets</option>
+              <option value="Binary Trees">Binary Trees</option>
+              <option value="Binary Search Trees (BST)">Binary Search Trees (BST)</option>
+              <option value="Heaps & Priority Queues">Heaps & Priority Queues</option>
+              <option value="Graphs (Representation & Properties)">Graphs</option>
+              <option value="Trie (Prefix Tree)">Trie (Prefix Tree)</option>
+              <option value="Disjoint Set Union (Union-Find)">Disjoint Set Union</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Algorithm / Pattern</label>
+            <select class="form-select" id="new-prob-algo">
+              <option value="">Select Algorithm...</option>
+              <option value="Two Pointers Technique">Two Pointers Technique</option>
+              <option value="Sliding Window (Fixed & Variable)">Sliding Window</option>
+              <option value="Prefix Sums & Frequency Arrays">Prefix Sums</option>
+              <option value="Binary Search">Binary Search</option>
+              <option value="Sorting Algorithms (Merge, Quick, Count)">Sorting</option>
+              <option value="Breadth-First Search (BFS)">BFS</option>
+              <option value="Depth-First Search (DFS) & Backtracking">DFS & Backtracking</option>
+              <option value="Dynamic Programming (1D & 2D)">Dynamic Programming</option>
+              <option value="Greedy Algorithms & Intervals">Greedy & Intervals</option>
+              <option value="Dijkstra & Shortest Path">Dijkstra</option>
+              <option value="Topological Sort (Kahn's & DFS)">Topological Sort</option>
+              <option value="Bit Manipulation">Bit Manipulation</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pattern Subtag</label>
+            <input type="text" class="form-input" id="new-prob-pattern" placeholder="e.g. Left/Right Max Arrays">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Time Complexity</label>
+            <input type="text" class="form-input" id="new-prob-time" placeholder="e.g. O(N)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Space Complexity</label>
+            <input type="text" class="form-input" id="new-prob-space" placeholder="e.g. O(1)">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">LeetCode Problem URL</label>
+          <input type="url" class="form-input" id="new-prob-url" placeholder="https://leetcode.com/problems/...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Approach Notes / Key Insights</label>
+          <textarea class="form-textarea" id="new-prob-notes" placeholder="Key intuition, tricky edge cases to remember during revision..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="App.closeModal('modal-add-problem')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Problem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/static/js/app.js?v=2.1"></script>
+  <script src="/static/js/topic.js?v=2.1"></script>
+  <script>
+    async function handleQuickAddProblem(e) {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById("new-prob-title").value,
+        leetcode_number: document.getElementById("new-prob-number").value ? parseInt(document.getElementById("new-prob-number").value) : null,
+        difficulty: document.getElementById("new-prob-difficulty").value,
+        data_structure: document.getElementById("new-prob-ds").value,
+        algorithm: document.getElementById("new-prob-algo").value,
+        pattern: document.getElementById("new-prob-pattern").value,
+        time_complexity: document.getElementById("new-prob-time").value,
+        space_complexity: document.getElementById("new-prob-space").value,
+        problem_url: document.getElementById("new-prob-url").value,
+        approach_notes: document.getElementById("new-prob-notes").value
+      };
+
+      try {
+        await App.api("/api/problems", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        App.showToast(`Problem "${payload.title}" saved!`);
+        App.closeModal("modal-add-problem");
+        document.getElementById("form-add-problem").reset();
+        if (typeof loadTopicData === "function") {
+          await loadTopicData();
+        }
+      } catch (err) {
+        App.showToast(`Failed to save: ${err.message}`, "error");
+      }
+    }
+  </script>
+</body>
+</html>

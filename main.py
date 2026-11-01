@@ -28,8 +28,14 @@ def page_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 @app.get("/concepts")
+@app.get("/concepts.html")
 def page_concepts():
     return FileResponse(os.path.join(STATIC_DIR, "concepts.html"))
+
+@app.get("/topic")
+@app.get("/topic.html")
+def page_topic():
+    return FileResponse(os.path.join(STATIC_DIR, "topic.html"))
 
 @app.get("/problems")
 def page_problems():

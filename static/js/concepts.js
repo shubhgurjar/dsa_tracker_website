@@ -108,7 +108,11 @@ function renderFilteredConcepts() {
       <div class="concept-top">
         <div>
           <div class="concept-category">${escapeHtml(c.category || "Core")}</div>
-          <h4 class="concept-title">${escapeHtml(c.name)}</h4>
+          <h4 class="concept-title">
+            <a href="/topic?id=${c.id}" style="color:#fff; text-decoration:none;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#fff'">
+              ${escapeHtml(c.name)} <span style="font-size:0.85rem; color:#818cf8; margin-left:4px;">↗</span>
+            </a>
+          </h4>
         </div>
         <select class="select-control" style="font-size:0.75rem; padding:0.25rem 0.5rem;" onchange="updateConceptStatus(${c.id}, this.value)">
           <option value="Not Started" ${c.status === "Not Started" ? "selected" : ""}>⚪ Not Started</option>
@@ -117,35 +121,50 @@ function renderFilteredConcepts() {
         </select>
       </div>
 
-      <p class="concept-desc">${escapeHtml(c.description || "")}</p>
+      ${c.description ? `<p class="concept-desc">${escapeHtml(c.description)}</p>` : ""}
 
       ${c.cheat_sheet ? `
-        <div style="font-size:0.72rem; color:var(--text-dim); font-weight:600; margin-bottom:0.25rem; text-transform:uppercase;">Cheat Sheet & Patterns:</div>
-        <div class="cheat-sheet-box">${escapeHtml(c.cheat_sheet)}</div>
+        <div style="font-size:0.72rem; color:var(--text-dim); font-weight:600; margin-bottom:0.25rem; text-transform:uppercase;">Quick Summary:</div>
+        <div class="cheat-sheet-box" style="max-height:85px;">${escapeHtml(c.cheat_sheet)}</div>
       ` : ""}
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; font-size:0.8rem;">
-        <div>
-          <span style="color:var(--text-dim); margin-right:4px;">Confidence:</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; font-size:0.8rem; flex-wrap:wrap; gap:0.4rem;">
+        <div style="display:flex; align-items:center; gap:0.35rem;">
+          <span style="color:var(--text-dim);">Confidence:</span>
           <span class="confidence-stars" title="${c.confidence}/5 confidence" onclick="promptConfidence(${c.id}, ${c.confidence})" style="cursor:pointer;">
             ${'★'.repeat(c.confidence || 1)}${'☆'.repeat(5 - (c.confidence || 1))}
           </span>
         </div>
-        <span class="badge" style="background:rgba(99, 102, 241, 0.12); color:#818cf8; border:1px solid rgba(99, 102, 241, 0.25);">
-          ${c.problems_solved || 0} Problems Solved
-        </span>
+        <div style="display:flex; gap:0.4rem; align-items:center;">
+          <span class="badge" style="background:rgba(99, 102, 241, 0.12); color:#818cf8; border:1px solid rgba(99, 102, 241, 0.25);">
+            🗂️ ${c.flashcards_count || 0} Cards
+          </span>
+          <span class="badge" style="background:rgba(255, 255, 255, 0.05); color:var(--text-muted);">
+            🎯 ${c.problems_solved || 0} Solved
+          </span>
+        </div>
       </div>
 
-      <div class="concept-footer">
+      <!-- Revision Status & Action Buttons -->
+      <div class="concept-footer" style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:0.75rem; margin-bottom:0.65rem; font-size:0.8rem;">
         <div style="display:flex; align-items:center; gap:0.4rem;">
           <span style="font-size:0.75rem; color:var(--text-dim);">Last Revised:</span>
           ${App.formatDaysAgoBadge(c.days_since_revised)}
         </div>
-        <div style="display:flex; gap:0.4rem;">
-          <button class="btn btn-sm btn-secondary" onclick="openEditConceptModal(${c.id})">✏️ Notes</button>
-          <button class="btn btn-sm btn-revise" onclick="markConceptRevised(${c.id}, '${escapeHtml(c.name)}')">✓ Revised</button>
+        <div style="display:flex; gap:0.4rem; align-items:center;">
+          <button class="btn btn-sm btn-revise" onclick="markConceptRevised(${c.id}, '${escapeHtml(c.name)}')">
+            ✓ Revised
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="openEditConceptModal(${c.id})" title="Edit Details & Notes">
+            ✏️
+          </button>
         </div>
       </div>
+
+      <!-- Full-Width Dedicated Topic Page Button -->
+      <a href="/topic?id=${c.id}" class="btn btn-sm btn-primary" style="width:100%; justify-content:center; background:#6366f1; padding:0.55rem; font-weight:600; font-size:0.85rem;">
+        🗂️ Open Dedicated Notes & Flashcards (${c.flashcards_count || 0}) &rarr;
+      </a>
     </div>
   `).join("");
 }
@@ -195,10 +214,16 @@ async function promptConfidence(conceptId, currConf) {
 
 let activeEditConceptId = null;
 
+function goToDedicatedTopicFromModal() {
+  const targetId = activeEditConceptId || 2;
+  window.location.href = `/topic?id=${targetId}`;
+}
+
 async function openEditConceptModal(conceptId) {
+  activeEditConceptId = conceptId;
+
   try {
     const concept = await App.api(`/api/concepts/${conceptId}`);
-    activeEditConceptId = conceptId;
     document.getElementById("edit-concept-title").innerText = `Edit: ${concept.name}`;
     document.getElementById("edit-concept-notes").value = concept.key_notes || "";
     document.getElementById("edit-concept-cheatsheet").value = concept.cheat_sheet || "";

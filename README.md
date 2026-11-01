@@ -31,6 +31,12 @@ Designed with zero unnecessary bloat, instant-loading pages, spaced repetition r
 - **Progress Tracking**: Status selector (*Not Started*, *In Progress*, *Mastered*).
 - **Interactive Confidence Ratings**: 1 to 5 stars (★☆☆☆☆ to ★★★★★).
 - **Cheat Sheets & Code Templates**: Built-in reference notes for time/space complexity and invariants.
+- **Dedicated Topic Pages & Flashcards (`/topic?id=...`)**:
+  - Click on any topic (like **Strings** or **Dynamic Programming**) to open its dedicated page.
+  - Add as many flashcards as you want with a full page worth of notes, code snippets, gotchas, and complexity formulas.
+  - Tag flashcards by type (*Pattern*, *Template*, *Cheat Sheet*, *Edge Case*, *Theory*, *Complexity*).
+  - **Individual Revision Tracker on Every Flashcard**: Track the exact days since you last revisited each card (`🌱 Today`, `⚡ 4d ago`, `🚨 18d ago`), with 1-click **"✓ Revised Today"** buttons.
+  - **Full-Screen Reading Mode**: Inspect long-form, multi-page notes cleanly in an expansive reading view.
 - **Linked Problems**: Automatically counts and displays all solved problems under each topic.
 - **Custom Topic Creation**: Add any niche topics (e.g. Segment Trees, Fenwick Trees).
 

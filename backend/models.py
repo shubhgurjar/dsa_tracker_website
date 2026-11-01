@@ -66,8 +66,20 @@ class ConceptCreate(BaseModel):
     status: Optional[str] = "Not Started"
     confidence: Optional[int] = 1
 
+class FlashcardCreate(BaseModel):
+    title: str
+    content: str
+    tag: Optional[str] = "Pattern"
+    last_revised_date: Optional[str] = None
+
+class FlashcardUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    tag: Optional[str] = None
+    last_revised_date: Optional[str] = None
+
 class RevisionAction(BaseModel):
-    item_type: str # 'problem' or 'concept'
+    item_type: str # 'problem', 'concept', or 'flashcard'
     item_id: int
     revised_date: Optional[str] = None # defaults to today
     notes: Optional[str] = ""

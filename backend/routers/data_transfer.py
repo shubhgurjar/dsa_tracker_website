@@ -36,6 +36,9 @@ def export_all_data():
     cursor.execute("SELECT * FROM concepts")
     concepts = [dict(r) for r in cursor.fetchall()]
 
+    cursor.execute("SELECT * FROM flashcards")
+    flashcards = [dict(r) for r in cursor.fetchall()]
+
     cursor.execute("SELECT * FROM revision_logs")
     logs = [dict(r) for r in cursor.fetchall()]
 
@@ -53,6 +56,7 @@ def export_all_data():
         "config": safe_cfg,
         "problems": problems,
         "concepts": concepts,
+        "flashcards": flashcards,
         "revision_logs": logs,
         "leetcode_stats": lc_stats
     }
@@ -106,6 +110,19 @@ def import_all_data(payload: Dict[str, Any]):
                     c.get("description"), c.get("status", "Not Started"), c.get("confidence", 1),
                     c.get("key_notes", ""), c.get("cheat_sheet", ""),
                     c.get("last_revised_date"), c.get("revision_count", 0)
+                ))
+
+        # Import flashcards
+        if "flashcards" in payload and isinstance(payload["flashcards"], list):
+            cursor.execute("DELETE FROM flashcards")
+            for fc in payload["flashcards"]:
+                cursor.execute("""
+                    INSERT INTO flashcards (
+                        id, concept_id, title, tag, content, last_revised_date, revision_count
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    fc.get("id"), fc.get("concept_id"), fc.get("title"), fc.get("tag", "Pattern"),
+                    fc.get("content", ""), fc.get("last_revised_date"), fc.get("revision_count", 0)
                 ))
 
         # Import revision logs

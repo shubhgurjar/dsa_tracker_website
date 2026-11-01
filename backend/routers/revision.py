@@ -69,6 +69,35 @@ def get_revision_queue(
                 "confidence": d.get("confidence", 1)
             })
 
+    # 3. Fetch flashcards
+    if item_type in ("all", "flashcard"):
+        cursor.execute("""
+            SELECT f.*, c.name as concept_name 
+            FROM flashcards f
+            JOIN concepts c ON f.concept_id = c.id
+        """)
+        for row in cursor.fetchall():
+            d = dict(row)
+            days = calculate_days_since(d.get("last_revised_date"))
+            urgency, urgency_label = get_urgency_tier(days)
+            subtitle = f"{d.get('concept_name', 'Topic')} • Flashcard [{d.get('tag', 'Pattern')}]"
+
+            items.append({
+                "id": d["id"],
+                "item_type": "flashcard",
+                "title": d["title"],
+                "subtitle": subtitle,
+                "badge": d.get("tag", "Flashcard"),
+                "status": "Flashcard",
+                "solved_date": None,
+                "last_revised_date": d.get("last_revised_date"),
+                "revision_count": d.get("revision_count", 0),
+                "days_since_revised": days,
+                "urgency": urgency,
+                "urgency_label": urgency_label,
+                "concept_id": d["concept_id"]
+            })
+
     conn.close()
 
     # Search filter
@@ -148,6 +177,29 @@ def mark_revision(action: RevisionAction):
             WHERE id = ?
         """, (today, new_count, action.item_id))
         item_name = row["name"]
+
+    elif action.item_type == "flashcard":
+        cursor.execute("SELECT * FROM flashcards WHERE id = ?", (action.item_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Flashcard not found")
+
+        new_count = (row["revision_count"] or 0) + 1
+        cursor.execute("""
+            UPDATE flashcards 
+            SET last_revised_date = ?, revision_count = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (today, new_count, action.item_id))
+
+        cursor.execute("""
+            UPDATE concepts 
+            SET last_revised_date = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (today, row["concept_id"]))
+
+        item_name = row["title"]
+
     else:
         conn.close()
         raise HTTPException(status_code=400, detail="Invalid item_type")

@@ -87,15 +87,22 @@ function renderQueueTable(items) {
   }
 
   tbody.innerHTML = items.map(item => {
-    const typeBadge = item.item_type === "problem"
-      ? `<span class="badge" style="background:rgba(99,102,241,0.15); color:#818cf8;">Problem</span>`
-      : `<span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981;">Concept</span>`;
+    let typeBadge = `<span class="badge" style="background:rgba(99,102,241,0.15); color:#818cf8;">Problem</span>`;
+    if (item.item_type === "concept") {
+      typeBadge = `<span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981;">Concept</span>`;
+    } else if (item.item_type === "flashcard") {
+      typeBadge = `<span class="badge" style="background:rgba(56,189,248,0.15); color:#38bdf8;">Flashcard</span>`;
+    }
+
+    const titleHtml = item.item_type === "flashcard" && item.concept_id
+      ? `<a href="/topic?id=${item.concept_id}" style="color:#fff; text-decoration:none;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#fff'">${escapeHtml(item.title)} <span style="font-size:0.75rem; color:var(--text-dim);">↗</span></a>`
+      : `<span style="color:#fff;">${escapeHtml(item.title)}</span>`;
 
     return `
       <tr>
-        <td style="width: 80px;">${typeBadge}</td>
+        <td style="width: 85px;">${typeBadge}</td>
         <td>
-          <div style="font-weight: 600; color: #fff;">${escapeHtml(item.title)}</div>
+          <div style="font-weight: 600;">${titleHtml}</div>
           <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">${escapeHtml(item.subtitle)}</div>
         </td>
         <td style="font-size: 0.82rem; color: var(--text-dim);">${item.last_revised_date || "Never"}</td>

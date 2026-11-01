@@ -9,7 +9,7 @@ class TestDSATracker(unittest.TestCase):
 
     def test_pages_render(self):
         # Multi-page check
-        pages = ["/", "/dashboard", "/concepts", "/problems", "/revision", "/profile", "/login"]
+        pages = ["/", "/dashboard", "/concepts", "/problems", "/revision", "/profile", "/login", "/topic"]
         for p in pages:
             res = self.client.get(p)
             self.assertEqual(res.status_code, 200, f"Page {p} returned {res.status_code}")
@@ -106,7 +106,42 @@ class TestDSATracker(unittest.TestCase):
         export_data = export_res.json()
         self.assertIn("problems", export_data)
         self.assertIn("concepts", export_data)
+        self.assertIn("flashcards", export_data)
         self.assertIn("config", export_data)
+
+    def test_flashcards_flow(self):
+        # 1. Fetch concept for Strings (id = 2)
+        c_res = self.client.get("/api/concepts/2")
+        self.assertEqual(c_res.status_code, 200)
+        c_data = c_res.json()
+        self.assertIn("flashcards", c_data)
+
+        # 2. Add a new rich flashcard with page-worth text
+        create_res = self.client.post("/api/concepts/2/flashcards", json={
+            "title": "KMP Algorithm for Substring Search",
+            "tag": "Pattern",
+            "content": "KMP preprocessing LPS (Longest Proper Prefix which is also Suffix). Time complexity O(N+M)."
+        })
+        self.assertEqual(create_res.status_code, 200)
+        fc_id = create_res.json()["id"]
+        self.assertEqual(create_res.json()["days_since_revised"], 0)
+
+        # 3. Mark flashcard revised
+        rev_res = self.client.post(f"/api/flashcards/{fc_id}/revise")
+        self.assertEqual(rev_res.status_code, 200)
+        self.assertEqual(rev_res.json()["flashcard"]["revision_count"], 1)
+
+        # 4. Update flashcard
+        up_res = self.client.put(f"/api/flashcards/{fc_id}", json={
+            "tag": "Cheat Sheet",
+            "title": "KMP Algorithm - Updated"
+        })
+        self.assertEqual(up_res.status_code, 200)
+        self.assertEqual(up_res.json()["tag"], "Cheat Sheet")
+
+        # 5. Delete flashcard
+        del_res = self.client.delete(f"/api/flashcards/{fc_id}")
+        self.assertEqual(del_res.status_code, 200)
 
 if __name__ == "__main__":
     unittest.main()
