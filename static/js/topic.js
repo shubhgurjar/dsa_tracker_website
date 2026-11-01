@@ -2,6 +2,27 @@
  * Dedicated Topic & Flashcards Page Logic
  */
 
+// Configure marked with syntax highlighting
+if (window.marked) {
+  marked.setOptions({
+    gfm: true,
+    breaks: true,
+    highlight: function (code, lang) {
+      if (window.hljs) {
+        if (lang && hljs.getLanguage(lang)) {
+          try {
+            return hljs.highlight(code, { language: lang }).value;
+          } catch (e) {}
+        }
+        try {
+          return hljs.highlightAuto(code).value;
+        } catch (e) {}
+      }
+      return code;
+    }
+  });
+}
+
 let currentConceptId = null;
 let currentConcept = null;
 let allFlashcards = [];
@@ -34,6 +55,12 @@ function setupEventListeners() {
 
   const addForm = document.getElementById("form-add-flashcard");
   if (addForm) addForm.addEventListener("submit", handleSaveFlashcard);
+
+  // Smart paste listener for flashcard content textarea (converts tables & code into markdown)
+  const contentTextarea = document.getElementById("fc-form-content");
+  if (contentTextarea) {
+    contentTextarea.addEventListener("paste", handleSmartPaste);
+  }
 }
 
 async function loadTopicData() {
@@ -155,8 +182,8 @@ function renderFilteredFlashcards() {
         </div>
 
         <!-- Content Preview / Body -->
-        <div style="background:var(--bg-input); border-radius:var(--radius-sm); padding:0.85rem 1rem; margin-bottom:1rem; flex:1; font-size:0.85rem; line-height:1.55; color:#cbd5e1; white-space:pre-wrap; font-family:var(--font-sans); max-height:220px; overflow-y:auto; border:1px solid rgba(255,255,255,0.04);">
-${escapeHtml(card.content)}
+        <div class="markdown-content" style="background:var(--bg-input); border-radius:var(--radius-sm); padding:0.85rem 1rem; margin-bottom:1rem; flex:1; font-size:0.85rem; line-height:1.55; color:#cbd5e1; max-height:240px; overflow-y:auto; border:1px solid rgba(255,255,255,0.04);">
+          ${renderMarkdownSafe(card.content)}
         </div>
 
         <!-- Footer Actions -->
@@ -183,6 +210,8 @@ ${escapeHtml(card.content)}
       </div>
     `;
   }).join("");
+
+  attachCodeCopyButtons(container);
 }
 
 function renderLinkedProblems(problems) {
@@ -307,7 +336,10 @@ function openFullViewModal(cardId) {
   document.getElementById("fullview-title").innerText = card.title;
   document.getElementById("fullview-urgency").innerHTML = App.formatDaysAgoBadge(card.days_since_revised);
   document.getElementById("fullview-last-rev").innerText = `Last Revised: ${card.last_revised_date || "Today"} (${card.revision_count || 0} times)`;
-  document.getElementById("fullview-content").innerText = card.content;
+  
+  const contentBox = document.getElementById("fullview-content");
+  contentBox.innerHTML = renderMarkdownSafe(card.content);
+  attachCodeCopyButtons(contentBox);
 
   App.openModal("modal-fullview-flashcard");
 }
@@ -382,4 +414,284 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// -------------------------------------------------------------------
+// COPYING & CLIPBOARD SUPPORT (Tables, Code Blocks & Markdown)
+// -------------------------------------------------------------------
+
+async function copyFullViewMarkdown() {
+  if (!activeFullViewCardId) return;
+  const card = allFlashcards.find(c => c.id === activeFullViewCardId);
+  if (!card) return;
+
+  try {
+    await navigator.clipboard.writeText(card.content);
+    App.showToast("Markdown copied! Tables and code structure intact.");
+  } catch (err) {
+    App.showToast("Failed to copy markdown: " + err.message, "error");
+  }
+}
+
+async function copyFullViewFormatted() {
+  if (!activeFullViewCardId) return;
+  const card = allFlashcards.find(c => c.id === activeFullViewCardId);
+  if (!card) return;
+
+  const contentBox = document.getElementById("fullview-content");
+  if (!contentBox) return;
+
+  const html = contentBox.innerHTML;
+  const plain = contentBox.innerText;
+
+  if (navigator.clipboard && window.ClipboardItem) {
+    try {
+      const blobHtml = new Blob([html], { type: "text/html" });
+      const blobText = new Blob([plain], { type: "text/plain" });
+      const item = new ClipboardItem({
+        "text/html": blobHtml,
+        "text/plain": blobText
+      });
+      await navigator.clipboard.write([item]);
+      App.showToast("Formatted notes copied to clipboard (tables and code intact)!");
+      return;
+    } catch (err) {
+      console.warn("ClipboardItem write failed, fallback to plain text:", err);
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(plain);
+    App.showToast("Notes copied to clipboard!");
+  } catch (err) {
+    App.showToast("Failed to copy: " + err.message, "error");
+  }
+}
+
+function attachCodeCopyButtons(container) {
+  if (!container) return;
+  const preElements = container.querySelectorAll("pre");
+  preElements.forEach(pre => {
+    if (pre.querySelector(".code-copy-btn")) return;
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "code-copy-btn";
+    copyBtn.innerHTML = "<span>📋</span> Copy";
+    copyBtn.title = "Copy code snippet";
+    copyBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const codeEl = pre.querySelector("code") || pre;
+      const textToCopy = codeEl.innerText || "";
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        copyBtn.innerHTML = "<span>✓</span> Copied!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.innerHTML = "<span>📋</span> Copy";
+          copyBtn.classList.remove("copied");
+        }, 2000);
+      } catch (err) {
+        App.showToast("Could not copy code: " + err.message, "error");
+      }
+    });
+    pre.appendChild(copyBtn);
+  });
+}
+
+// -------------------------------------------------------------------
+// SMART PASTE & MARKDOWN CONVERSION (LeetCode, TSV, Tables)
+// -------------------------------------------------------------------
+
+function handleSmartPaste(e) {
+  const clipboardData = e.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+
+  const html = clipboardData.getData("text/html");
+  const plainText = clipboardData.getData("text/plain");
+
+  let converted = null;
+
+  // 1. If HTML contains table or pre/code
+  if (html && (html.includes("<table") || html.includes("<tr") || html.includes("<pre") || html.includes("<code"))) {
+    const md = convertHtmlToMarkdown(html);
+    if (md && (md.includes("|") || md.includes("```"))) {
+      converted = md;
+    }
+  }
+
+  // 2. If plain text has tab characters indicating a copied table
+  if (!converted && plainText && plainText.includes("\t")) {
+    const linesWithTabs = plainText.split("\n").filter(l => l.includes("\t"));
+    if (linesWithTabs.length >= 2) {
+      converted = convertTsvToMarkdownTable(plainText);
+    }
+  }
+
+  if (converted) {
+    e.preventDefault();
+    insertAtCursor(this, converted);
+    App.showToast("Smart Formatted: Table / code converted to clean Markdown!");
+  }
+}
+
+function insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const value = textarea.value;
+
+  textarea.value = value.substring(0, start) + text + value.substring(end);
+  textarea.selectionStart = textarea.selectionEnd = start + text.length;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function convertHtmlTableToMarkdown(tableEl) {
+  const rows = [];
+  const trList = tableEl.querySelectorAll("tr");
+  trList.forEach(tr => {
+    const cells = tr.querySelectorAll("th, td");
+    if (cells.length > 0) {
+      const rowData = [];
+      cells.forEach(cell => {
+        let cellText = (cell.textContent || cell.innerText || "")
+          .replace(/\|/g, "\\|")
+          .replace(/\r?\n+/g, " ")
+          .trim();
+        rowData.push(cellText);
+      });
+      if (rowData.some(c => c.length > 0)) {
+        rows.push(rowData);
+      }
+    }
+  });
+
+  if (rows.length === 0) return "";
+  const maxCols = Math.max(...rows.map(r => r.length));
+  if (maxCols === 0) return "";
+
+  const mdLines = [];
+  const header = rows[0].concat(Array(maxCols - rows[0].length).fill(""));
+  mdLines.push("| " + header.join(" | ") + " |");
+  mdLines.push("| " + Array(maxCols).fill("---").join(" | ") + " |");
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i].concat(Array(maxCols - rows[i].length).fill(""));
+    mdLines.push("| " + row.join(" | ") + " |");
+  }
+
+  return mdLines.join("\n");
+}
+
+function convertHtmlToMarkdown(htmlString) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, "text/html");
+
+    // Replace all tables with their markdown equivalent
+    const tables = doc.querySelectorAll("table");
+    tables.forEach(table => {
+      const mdTable = convertHtmlTableToMarkdown(table);
+      if (mdTable) {
+        const textNode = doc.createTextNode("\n\n" + mdTable + "\n\n");
+        table.parentNode.replaceChild(textNode, table);
+      }
+    });
+
+    // Replace code blocks
+    const preBlocks = doc.querySelectorAll("pre");
+    preBlocks.forEach(pre => {
+      const codeEl = pre.querySelector("code") || pre;
+      let lang = "";
+      const classNames = (codeEl.className || "").split(/\s+/);
+      for (const cls of classNames) {
+        if (cls.startsWith("language-") || cls.startsWith("lang-")) {
+          lang = cls.replace(/^(language-|lang-)/, "");
+          break;
+        }
+      }
+      const codeText = (codeEl.textContent || pre.textContent || "").trim();
+      const mdCode = `\n\`\`\`${lang}\n${codeText}\n\`\`\`\n`;
+      const textNode = doc.createTextNode(mdCode);
+      pre.parentNode.replaceChild(textNode, pre);
+    });
+
+    if (tables.length > 0 || preBlocks.length > 0) {
+      return (doc.body.innerText || doc.body.textContent || "").trim();
+    }
+    return null;
+  } catch (err) {
+    console.warn("HTML conversion error:", err);
+    return null;
+  }
+}
+
+function convertTsvToMarkdownTable(tsvText) {
+  if (!tsvText || !tsvText.includes("\t")) return tsvText;
+  const lines = tsvText.split(/\r?\n/);
+  const rows = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const parts = line.split("\t").map(p => p.trim());
+    while (parts.length && parts[parts.length - 1] === "") {
+      parts.pop();
+    }
+    if (parts.length >= 2) {
+      rows.push(parts);
+    }
+  }
+  if (rows.length < 1) return tsvText;
+
+  const maxCols = Math.max(...rows.map(r => r.length));
+  if (maxCols < 2) return tsvText;
+
+  const mdLines = [];
+  const header = rows[0].concat(Array(maxCols - rows[0].length).fill("")).map(c => c.replace(/\|/g, "\\|"));
+  mdLines.push("| " + header.join(" | ") + " |");
+  mdLines.push("| " + Array(maxCols).fill("---").join(" | ") + " |");
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i].concat(Array(maxCols - rows[i].length).fill("")).map(c => c.replace(/\|/g, "\\|"));
+    mdLines.push("| " + row.join(" | ") + " |");
+  }
+
+  return mdLines.join("\n");
+}
+
+function renderMarkdownSafe(rawText) {
+  if (!rawText) return "";
+
+  let processed = rawText;
+  // If rawText has any tab-separated table sections, convert them first so TSV auto-renders
+  if (processed.includes("\t")) {
+    const lines = processed.split(/\r?\n/);
+    let tsvAcc = [];
+    const out = [];
+
+    const flushTsv = () => {
+      if (tsvAcc.length > 0) {
+        out.push(convertTsvToMarkdownTable(tsvAcc.join("\n")));
+        tsvAcc = [];
+      }
+    };
+
+    for (const line of lines) {
+      if (line.includes("\t") && line.split("\t").filter(Boolean).length >= 2) {
+        tsvAcc.push(line);
+      } else {
+        flushTsv();
+        out.push(line);
+      }
+    }
+    flushTsv();
+    processed = out.join("\n");
+  }
+
+  if (window.marked && typeof marked.parse === "function") {
+    let html = marked.parse(processed);
+    // Wrap tables in responsive wrapper
+    html = html.replace(/<table>/g, '<div class="table-wrapper"><table>');
+    html = html.replace(/<\/table>/g, '</table></div>');
+    return html;
+  }
+
+  return `<div style="white-space:pre-wrap;">${escapeHtml(rawText)}</div>`;
 }
